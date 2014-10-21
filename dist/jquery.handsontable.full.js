@@ -7196,7 +7196,7 @@ var jsonpatch;
             return observer;
         }
 
-        if (Object.observe) {
+        if (Object.observe && false) {
             observer = function (arr) {
                 //This "refresh" is needed to begin observing new object properties
                 _unobserve(observer, obj);
@@ -7288,7 +7288,7 @@ var jsonpatch;
 
     /// Listen to changes on an object tree, accumulate patches
     function _observe(observer, obj) {
-        if (Object.observe) {
+        if (Object.observe && false) {
             Object.observe(obj, observer);
             for (var key in obj) {
                 if (obj.hasOwnProperty(key)) {
@@ -7303,7 +7303,7 @@ var jsonpatch;
     }
 
     function _unobserve(observer, obj) {
-        if (Object.observe) {
+        if (Object.observe && false) {
             Object.unobserve(obj, observer);
             for (var key in obj) {
                 if (obj.hasOwnProperty(key)) {
@@ -7318,7 +7318,7 @@ var jsonpatch;
     }
 
     function generate(observer) {
-        if (Object.observe) {
+        if (Object.observe && false) {
             Object.deliverChangeRecords(observer);
         } else {
             var mirror;
