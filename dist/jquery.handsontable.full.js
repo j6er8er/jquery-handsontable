@@ -7361,7 +7361,7 @@ var jsonpatch;
         if(obj.toJSON) {
             obj = obj.toJSON();
         }
-        var newKeys = Ember.isArray(obj) ? obj.map(function(i,idx) { return idx; }) : _objectKeys(obj);
+        var newKeys = Ember.isArray(obj) ? obj.map(function(i,idx) { return idx+""; }) : _objectKeys(obj);
         var oldKeys = _objectKeys(mirror);
         var changed = false;
         var deleted = false;
