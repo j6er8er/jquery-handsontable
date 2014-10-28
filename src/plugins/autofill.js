@@ -335,6 +335,10 @@
     }
 
   });
+  Handsontable.hooks.add('afterDestroy', function () {
+    $(document).off('.autofill.' + this.guid, this.rootElement);
+    $(document).off('.moveOutside_' + this.guid);
+  });
 
   Handsontable.Autofill = Autofill;
 

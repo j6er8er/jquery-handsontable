@@ -359,6 +359,13 @@ var jsonpatch;
 
     // Dirty check if obj is different from mirror, generate patches and update mirror
     function _generate(mirror, obj, patches, path) {
+        if(!obj) {
+		if(Array.isArray(mirror)){
+			obj = [];
+		} else if (mirror instanceof Object) {
+			obj = {};
+		}
+	}
         if(obj.toJSON) {
             obj = obj.toJSON();
         }
@@ -395,7 +402,7 @@ var jsonpatch;
         for (var t = 0; t < newKeys.length; t++) {
             var key = newKeys[t];
             if (!mirror.hasOwnProperty(key)) {
-		if(obj[key] === undefined) continue;
+		if(obj[key] === undefined || typeof obj[key] === 'function') continue;
                 patches.push({ op: "add", path: path + "/" + escapePathComponent(key), value: obj[key] });
                 mirror[key] = JSON.parse(JSON.stringify(obj[key]));
             }
