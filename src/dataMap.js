@@ -76,26 +76,27 @@
   };
 
   Handsontable.DataMap.prototype.createMap = function () {
-    if (typeof this.getSchema() === "undefined") {
-      throw new Error("trying to create `columns` definition but you didnt' provide `schema` nor `data`");
-    }
-    var i, ilen, schema = this.getSchema();
-    this.colToPropCache = [];
-    this.propToColCache = new MultiMap();
-    var columns = this.instance.getSettings().columns;
-    if (columns) {
-      for (i = 0, ilen = columns.length; i < ilen; i++) {
+      var i, ilen;
+      this.colToPropCache = [];
+      this.propToColCache = new MultiMap();
+      var columns = this.instance.getSettings().columns;
+      if (columns) {
+          for (i = 0, ilen = columns.length; i < ilen; i++) {
 
-        if (typeof columns[i].data != 'undefined'){
-          this.colToPropCache[i] = columns[i].data;
-          this.propToColCache.set(columns[i].data, i);
-        }
+              if (typeof columns[i].data != 'undefined'){
+                  this.colToPropCache[i] = columns[i].data;
+                  this.propToColCache.set(columns[i].data, i);
+              }
 
+          }
       }
-    }
-    else {
-      this.recursiveDuckColumns(schema);
-    }
+      else {
+          if (typeof this.getSchema() === "undefined") {
+              throw new Error("trying to create `columns` definition but you didnt' provide `schema` nor `data`");
+          }
+          var schema = this.getSchema();
+          this.recursiveDuckColumns(schema);
+      }
   };
 
   Handsontable.DataMap.prototype.colToProp = function (col) {

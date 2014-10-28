@@ -6,7 +6,7 @@
  * Licensed under the MIT license.
  * http://handsontable.com/
  *
- * Date: Tue Oct 21 2014 09:52:30 GMT+1100 (AUS Eastern Summer Time)
+ * Date: Tue Oct 28 2014 11:14:57 GMT-0700 (PDT)
  */
 /*jslint white: true, browser: true, plusplus: true, indent: 4, maxerr: 50 */
 
@@ -3015,7 +3015,7 @@ Handsontable.TableView = function (instance) {
         if (next === null) {
           return; //click on something that was a row but now is detached (possibly because your click triggered a rerender)
         }
-        if (next === instance.rootElement[0]) {
+        if (instance.rootElement && next === instance.rootElement[0]) {
           return; //click inside container
         }
         next = next.parentNode;
@@ -4377,7 +4377,6 @@ Handsontable.helper.toString = function (obj) {
   };
 
   Handsontable.DataMap.prototype.createMap = function () {
-
       var i, ilen;
       this.colToPropCache = [];
       this.propToColCache = new MultiMap();
