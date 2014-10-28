@@ -6,7 +6,7 @@
  * Licensed under the MIT license.
  * http://handsontable.com/
  *
- * Date: Tue Oct 28 2014 11:14:57 GMT-0700 (PDT)
+ * Date: Wed Nov 05 2014 13:51:58 GMT-0800 (PST)
  */
 /*jslint white: true, browser: true, plusplus: true, indent: 4, maxerr: 50 */
 
@@ -1102,6 +1102,10 @@ Handsontable.Core = function (rootElement, userSettings) {
    * @param {Boolean} revertOriginal
    */
   this.destroyEditor = function (revertOriginal) {
+    var editor = this.getActiveEditor();
+    if (editor && editor.$htContainer && editor.$htContainer[0]) {
+      $('html').off('.' + editor.$htContainer[0].id);
+    }
     selection.refreshBorders(revertOriginal);
   };
 
@@ -3029,6 +3033,7 @@ Handsontable.TableView = function (instance) {
     }
     else {
       instance.destroyEditor();
+      event.stopImmediatePropagation();
     }
   });
 
@@ -3737,6 +3742,10 @@ Handsontable.TableView.prototype.mainViewIsActive = function () {
      * @param {Boolean} revertOriginal
      */
     this.destroyEditor = function (revertOriginal) {
+      var editor = this.getActiveEditor();
+      if (editor && editor.$htContainer && editor.$htContainer[0]) {
+        $('html').off('.' + editor.$htContainer[0].id);
+      }
       this.closeEditor(revertOriginal);
     };
 
@@ -7357,6 +7366,13 @@ var jsonpatch;
 
     // Dirty check if obj is different from mirror, generate patches and update mirror
     function _generate(mirror, obj, patches, path) {
+        if(!obj) {
+		if(Array.isArray(mirror)){
+			obj = [];
+		} else if (mirror instanceof Object) {
+			obj = {};
+		}
+	}
         if(obj.toJSON) {
             obj = obj.toJSON();
         }
@@ -7393,7 +7409,7 @@ var jsonpatch;
         for (var t = 0; t < newKeys.length; t++) {
             var key = newKeys[t];
             if (!mirror.hasOwnProperty(key)) {
-		if(obj[key] === undefined) continue;
+		if(obj[key] === undefined || typeof obj[key] === 'function') continue;
                 patches.push({ op: "add", path: path + "/" + escapePathComponent(key), value: obj[key] });
                 mirror[key] = JSON.parse(JSON.stringify(obj[key]));
             }
@@ -12756,6 +12772,10 @@ Handsontable.MergeCells = MergeCells;
       }
     }
 
+  });
+  Handsontable.hooks.add('afterDestroy', function () {
+    $(document).off('.autofill.' + this.guid, this.rootElement);
+    $(document).off('.moveOutside_' + this.guid);
   });
 
   Handsontable.Autofill = Autofill;
