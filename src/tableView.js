@@ -67,7 +67,7 @@ Handsontable.TableView = function (instance) {
         if (next === null) {
           return; //click on something that was a row but now is detached (possibly because your click triggered a rerender)
         }
-        if (next === instance.rootElement[0]) {
+        if (instance.rootElement && next === instance.rootElement[0]) {
           return; //click inside container
         }
         next = next.parentNode;
@@ -81,6 +81,7 @@ Handsontable.TableView = function (instance) {
     }
     else {
       instance.destroyEditor();
+      event.stopImmediatePropagation();
     }
   });
 

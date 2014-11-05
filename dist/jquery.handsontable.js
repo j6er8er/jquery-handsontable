@@ -6,7 +6,7 @@
  * Licensed under the MIT license.
  * http://handsontable.com/
  *
- * Date: Tue Oct 21 2014 09:52:30 GMT+1100 (AUS Eastern Summer Time)
+ * Date: Wed Nov 05 2014 13:51:58 GMT-0800 (PST)
  */
 /*jslint white: true, browser: true, plusplus: true, indent: 4, maxerr: 50 */
 
@@ -1102,6 +1102,10 @@ Handsontable.Core = function (rootElement, userSettings) {
    * @param {Boolean} revertOriginal
    */
   this.destroyEditor = function (revertOriginal) {
+    var editor = this.getActiveEditor();
+    if (editor && editor.$htContainer && editor.$htContainer[0]) {
+      $('html').off('.' + editor.$htContainer[0].id);
+    }
     selection.refreshBorders(revertOriginal);
   };
 
@@ -3015,7 +3019,7 @@ Handsontable.TableView = function (instance) {
         if (next === null) {
           return; //click on something that was a row but now is detached (possibly because your click triggered a rerender)
         }
-        if (next === instance.rootElement[0]) {
+        if (instance.rootElement && next === instance.rootElement[0]) {
           return; //click inside container
         }
         next = next.parentNode;
@@ -3029,6 +3033,7 @@ Handsontable.TableView = function (instance) {
     }
     else {
       instance.destroyEditor();
+      event.stopImmediatePropagation();
     }
   });
 
@@ -3737,6 +3742,10 @@ Handsontable.TableView.prototype.mainViewIsActive = function () {
      * @param {Boolean} revertOriginal
      */
     this.destroyEditor = function (revertOriginal) {
+      var editor = this.getActiveEditor();
+      if (editor && editor.$htContainer && editor.$htContainer[0]) {
+        $('html').off('.' + editor.$htContainer[0].id);
+      }
       this.closeEditor(revertOriginal);
     };
 
@@ -4377,26 +4386,27 @@ Handsontable.helper.toString = function (obj) {
   };
 
   Handsontable.DataMap.prototype.createMap = function () {
-    if (typeof this.getSchema() === "undefined") {
-      throw new Error("trying to create `columns` definition but you didnt' provide `schema` nor `data`");
-    }
-    var i, ilen, schema = this.getSchema();
-    this.colToPropCache = [];
-    this.propToColCache = new MultiMap();
-    var columns = this.instance.getSettings().columns;
-    if (columns) {
-      for (i = 0, ilen = columns.length; i < ilen; i++) {
+      var i, ilen;
+      this.colToPropCache = [];
+      this.propToColCache = new MultiMap();
+      var columns = this.instance.getSettings().columns;
+      if (columns) {
+          for (i = 0, ilen = columns.length; i < ilen; i++) {
 
-        if (typeof columns[i].data != 'undefined'){
-          this.colToPropCache[i] = columns[i].data;
-          this.propToColCache.set(columns[i].data, i);
-        }
+              if (typeof columns[i].data != 'undefined'){
+                  this.colToPropCache[i] = columns[i].data;
+                  this.propToColCache.set(columns[i].data, i);
+              }
 
+          }
       }
-    }
-    else {
-      this.recursiveDuckColumns(schema);
-    }
+      else {
+          if (typeof this.getSchema() === "undefined") {
+              throw new Error("trying to create `columns` definition but you didnt' provide `schema` nor `data`");
+          }
+          var schema = this.getSchema();
+          this.recursiveDuckColumns(schema);
+      }
   };
 
   Handsontable.DataMap.prototype.colToProp = function (col) {
@@ -7194,7 +7204,7 @@ var jsonpatch;
             return observer;
         }
 
-        if (Object.observe) {
+        if (Object.observe && false) {
             observer = function (arr) {
                 //This "refresh" is needed to begin observing new object properties
                 _unobserve(observer, obj);
@@ -7286,7 +7296,7 @@ var jsonpatch;
 
     /// Listen to changes on an object tree, accumulate patches
     function _observe(observer, obj) {
-        if (Object.observe) {
+        if (Object.observe && false) {
             Object.observe(obj, observer);
             for (var key in obj) {
                 if (obj.hasOwnProperty(key)) {
@@ -7301,7 +7311,7 @@ var jsonpatch;
     }
 
     function _unobserve(observer, obj) {
-        if (Object.observe) {
+        if (Object.observe && false) {
             Object.unobserve(obj, observer);
             for (var key in obj) {
                 if (obj.hasOwnProperty(key)) {
@@ -7316,7 +7326,7 @@ var jsonpatch;
     }
 
     function generate(observer) {
-        if (Object.observe) {
+        if (Object.observe && false) {
             Object.deliverChangeRecords(observer);
         } else {
             var mirror;
@@ -7356,7 +7366,17 @@ var jsonpatch;
 
     // Dirty check if obj is different from mirror, generate patches and update mirror
     function _generate(mirror, obj, patches, path) {
-        var newKeys = _objectKeys(obj);
+        if(!obj) {
+		if(Array.isArray(mirror)){
+			obj = [];
+		} else if (mirror instanceof Object) {
+			obj = {};
+		}
+	}
+        if(obj.toJSON) {
+            obj = obj.toJSON();
+        }
+        var newKeys = Ember.isArray(obj) ? obj.map(function(i,idx) { return idx+""; }) : _objectKeys(obj);
         var oldKeys = _objectKeys(mirror);
         var changed = false;
         var deleted = false;
@@ -7389,6 +7409,7 @@ var jsonpatch;
         for (var t = 0; t < newKeys.length; t++) {
             var key = newKeys[t];
             if (!mirror.hasOwnProperty(key)) {
+		if(obj[key] === undefined || typeof obj[key] === 'function') continue;
                 patches.push({ op: "add", path: path + "/" + escapePathComponent(key), value: obj[key] });
                 mirror[key] = JSON.parse(JSON.stringify(obj[key]));
             }
@@ -12751,6 +12772,10 @@ Handsontable.MergeCells = MergeCells;
       }
     }
 
+  });
+  Handsontable.hooks.add('afterDestroy', function () {
+    $(document).off('.autofill.' + this.guid, this.rootElement);
+    $(document).off('.moveOutside_' + this.guid);
   });
 
   Handsontable.Autofill = Autofill;

@@ -197,7 +197,7 @@ var jsonpatch;
             return observer;
         }
 
-        if (Object.observe) {
+        if (Object.observe && false) {
             observer = function (arr) {
                 //This "refresh" is needed to begin observing new object properties
                 _unobserve(observer, obj);
@@ -289,7 +289,7 @@ var jsonpatch;
 
     /// Listen to changes on an object tree, accumulate patches
     function _observe(observer, obj) {
-        if (Object.observe) {
+        if (Object.observe && false) {
             Object.observe(obj, observer);
             for (var key in obj) {
                 if (obj.hasOwnProperty(key)) {
@@ -304,7 +304,7 @@ var jsonpatch;
     }
 
     function _unobserve(observer, obj) {
-        if (Object.observe) {
+        if (Object.observe && false) {
             Object.unobserve(obj, observer);
             for (var key in obj) {
                 if (obj.hasOwnProperty(key)) {
@@ -319,7 +319,7 @@ var jsonpatch;
     }
 
     function generate(observer) {
-        if (Object.observe) {
+        if (Object.observe && false) {
             Object.deliverChangeRecords(observer);
         } else {
             var mirror;
@@ -359,7 +359,17 @@ var jsonpatch;
 
     // Dirty check if obj is different from mirror, generate patches and update mirror
     function _generate(mirror, obj, patches, path) {
-        var newKeys = _objectKeys(obj);
+        if(!obj) {
+		if(Array.isArray(mirror)){
+			obj = [];
+		} else if (mirror instanceof Object) {
+			obj = {};
+		}
+	}
+        if(obj.toJSON) {
+            obj = obj.toJSON();
+        }
+        var newKeys = Ember.isArray(obj) ? obj.map(function(i,idx) { return idx+""; }) : _objectKeys(obj);
         var oldKeys = _objectKeys(mirror);
         var changed = false;
         var deleted = false;
@@ -392,6 +402,7 @@ var jsonpatch;
         for (var t = 0; t < newKeys.length; t++) {
             var key = newKeys[t];
             if (!mirror.hasOwnProperty(key)) {
+		if(obj[key] === undefined || typeof obj[key] === 'function') continue;
                 patches.push({ op: "add", path: path + "/" + escapePathComponent(key), value: obj[key] });
                 mirror[key] = JSON.parse(JSON.stringify(obj[key]));
             }

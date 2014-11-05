@@ -6,7 +6,7 @@
  * Licensed under the MIT license.
  * http://handsontable.com/
  *
- * Date: Tue Oct 21 2014 09:52:30 GMT+1100 (AUS Eastern Summer Time)
+ * Date: Wed Nov 05 2014 13:51:58 GMT-0800 (PST)
  */
 /*jslint white: true, browser: true, plusplus: true, indent: 4, maxerr: 50 */
 
@@ -1102,6 +1102,10 @@ Handsontable.Core = function (rootElement, userSettings) {
    * @param {Boolean} revertOriginal
    */
   this.destroyEditor = function (revertOriginal) {
+    var editor = this.getActiveEditor();
+    if (editor && editor.$htContainer && editor.$htContainer[0]) {
+      $('html').off('.' + editor.$htContainer[0].id);
+    }
     selection.refreshBorders(revertOriginal);
   };
 
@@ -3015,7 +3019,7 @@ Handsontable.TableView = function (instance) {
         if (next === null) {
           return; //click on something that was a row but now is detached (possibly because your click triggered a rerender)
         }
-        if (next === instance.rootElement[0]) {
+        if (instance.rootElement && next === instance.rootElement[0]) {
           return; //click inside container
         }
         next = next.parentNode;
@@ -3029,6 +3033,7 @@ Handsontable.TableView = function (instance) {
     }
     else {
       instance.destroyEditor();
+      event.stopImmediatePropagation();
     }
   });
 
@@ -3737,6 +3742,10 @@ Handsontable.TableView.prototype.mainViewIsActive = function () {
      * @param {Boolean} revertOriginal
      */
     this.destroyEditor = function (revertOriginal) {
+      var editor = this.getActiveEditor();
+      if (editor && editor.$htContainer && editor.$htContainer[0]) {
+        $('html').off('.' + editor.$htContainer[0].id);
+      }
       this.closeEditor(revertOriginal);
     };
 
@@ -4377,7 +4386,6 @@ Handsontable.helper.toString = function (obj) {
   };
 
   Handsontable.DataMap.prototype.createMap = function () {
-
       var i, ilen;
       this.colToPropCache = [];
       this.propToColCache = new MultiMap();
@@ -7365,7 +7373,7 @@ var jsonpatch;
 			obj = {};
 		}
 	}
-	if(obj.toJSON) {
+        if(obj.toJSON) {
             obj = obj.toJSON();
         }
         var newKeys = Ember.isArray(obj) ? obj.map(function(i,idx) { return idx+""; }) : _objectKeys(obj);
@@ -12764,6 +12772,10 @@ Handsontable.MergeCells = MergeCells;
       }
     }
 
+  });
+  Handsontable.hooks.add('afterDestroy', function () {
+    $(document).off('.autofill.' + this.guid, this.rootElement);
+    $(document).off('.moveOutside_' + this.guid);
   });
 
   Handsontable.Autofill = Autofill;

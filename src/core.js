@@ -915,6 +915,10 @@ Handsontable.Core = function (rootElement, userSettings) {
    * @param {Boolean} revertOriginal
    */
   this.destroyEditor = function (revertOriginal) {
+    var editor = this.getActiveEditor();
+    if (editor && editor.$htContainer && editor.$htContainer[0]) {
+      $('html').off('.' + editor.$htContainer[0].id);
+    }
     selection.refreshBorders(revertOriginal);
   };
 
