@@ -7358,7 +7358,14 @@ var jsonpatch;
 
     // Dirty check if obj is different from mirror, generate patches and update mirror
     function _generate(mirror, obj, patches, path) {
-        if(obj.toJSON) {
+        if(!obj) {
+		if(Array.isArray(mirror)){
+			obj = [];
+		} else if (mirror instanceof Object) {
+			obj = {};
+		}
+	}
+	if(obj.toJSON) {
             obj = obj.toJSON();
         }
         var newKeys = Ember.isArray(obj) ? obj.map(function(i,idx) { return idx+""; }) : _objectKeys(obj);
