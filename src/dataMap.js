@@ -17,7 +17,7 @@
     this.GridSettings = GridSettings;
     this.dataSource = this.instance.getSettings().data;
 
-    if (this.dataSource[0]) {
+    if (this.dataSource[0] && !this.instance.getSettings().dataSchema) {
       this.duckSchema = this.recursiveDuckSchema(this.dataSource[0]);
     }
     else {
