@@ -6,7 +6,7 @@
  * Licensed under the MIT license.
  * http://handsontable.com/
  *
- * Date: Mon Jan 19 2015 11:54:47 GMT-0800 (PST)
+ * Date: Mon Jan 19 2015 13:42:59 GMT-0800 (PST)
  */
 /*jslint white: true, browser: true, plusplus: true, indent: 4, maxerr: 50 */
 
@@ -17803,7 +17803,7 @@ WalkontableVerticalScrollbarNative.prototype.refresh = function (fastDraw) {
 WalkontableVerticalScrollbarNative.prototype.applyToDOM = function () {
   var total = this.instance.getSetting('totalRows');
   var headerSize = this.instance.wtViewport.getColumnHeaderHeight();
-  this.fixedContainer.style.height = headerSize + this.sumCellSizes(0, total) +  'px';// + 4 + 'px'; //+4 is needed, otherwise vertical scroll appears in Chrome (window scroll mode) - maybe because of fill handle in last row or because of box shadow
+  //this.fixedContainer.style.height = headerSize + this.sumCellSizes(0, total) +  'px';// + 4 + 'px'; //+4 is needed, otherwise vertical scroll appears in Chrome (window scroll mode) - maybe because of fill handle in last row or because of box shadow
   if (typeof this.instance.wtViewport.rowsRenderCalculator.startPosition === 'number') {
     this.fixed.style.top = this.instance.wtViewport.rowsRenderCalculator.startPosition + 'px';
   }
