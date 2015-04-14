@@ -13,13 +13,15 @@ function WalkontableViewport(instance) {
 }
 
 WalkontableViewport.prototype.getWorkspaceHeight = function () {
-  var scrollHandler = this.instance.wtScrollbars.vertical.scrollHandler;
-  if (scrollHandler === window) {
+  //var scrollHandler = this.instance.wtOverlays.topOverlay.scrollHandler;
+  var trimmingContainer = this.instance.wtOverlays.topOverlay.trimmingContainer;
+
+  if (trimmingContainer === window) {
     return document.documentElement.clientHeight;
   }
   else {
-    var elemHeight = Handsontable.Dom.outerHeight(scrollHandler);
-    var height = (elemHeight > 0 && scrollHandler.clientHeight > 0) ? scrollHandler.clientHeight : Infinity; //returns height without DIV scrollbar
+    var elemHeight = Handsontable.Dom.outerHeight(trimmingContainer);
+    var height = (elemHeight > 0 && trimmingContainer.clientHeight > 0) ? trimmingContainer.clientHeight : Infinity; //returns height without DIV scrollbar
     return height;
   }
 };
@@ -28,7 +30,7 @@ WalkontableViewport.prototype.getWorkspaceHeight = function () {
 WalkontableViewport.prototype.getWorkspaceWidth = function () {
   var width,
     totalColumns = this.instance.getSetting("totalColumns"),
-    scrollHandler = this.instance.wtScrollbars.horizontal.scrollHandler,
+    trimmingContainer = this.instance.wtOverlays.leftOverlay.trimmingContainer,
     overflow,
     stretchSetting = this.instance.getSetting('stretchH');
 
@@ -38,7 +40,7 @@ WalkontableViewport.prototype.getWorkspaceWidth = function () {
     width = Math.min(this.getContainerFillWidth(), document.documentElement.offsetWidth - this.getWorkspaceOffset().left, document.documentElement.offsetWidth);
   }
 
-  if (scrollHandler === window && totalColumns > 0 && this.sumColumnWidths(0, totalColumns - 1) > width) {
+  if (trimmingContainer === window && totalColumns > 0 && this.sumColumnWidths(0, totalColumns - 1) > width) {
     //in case sum of column widths is higher than available stylesheet width, let's assume using the whole window
     //otherwise continue below, which will allow stretching
     //this is used in `scroll_window.html`
@@ -46,13 +48,13 @@ WalkontableViewport.prototype.getWorkspaceWidth = function () {
     return document.documentElement.clientWidth;
   }
 
-  if (scrollHandler !== window){
-      overflow = this.instance.wtScrollbars.horizontal.scrollHandler.style.overflow;
+  if (trimmingContainer !== window){
+      overflow = this.instance.wtOverlays.leftOverlay.trimmingContainer.style.overflow;
 
     if (overflow == "scroll" || overflow == "hidden" || overflow == "auto") {
       //this is used in `scroll.html`
       //TODO test me
-      return Math.max(width, scrollHandler.clientWidth);
+      return Math.max(width, trimmingContainer.clientWidth);
     }
   }
 
@@ -83,9 +85,9 @@ WalkontableViewport.prototype.getContainerFillWidth = function() {
       fillWidth,
       dummyElement;
 
-  while(mainContainer.parentNode != document.body && mainContainer.parentNode != null && mainContainer.className.indexOf('handsontable') === -1) {
-    mainContainer = mainContainer.parentNode;
-  }
+  //while(mainContainer.parentNode != document.body && mainContainer.parentNode != null && mainContainer.className.indexOf('handsontable') === -1) {
+  //  mainContainer = mainContainer.parentNode;
+  //}
 
   dummyElement = document.createElement("DIV");
   dummyElement.style.width = "100%";
@@ -185,12 +187,13 @@ WalkontableViewport.prototype.getViewportWidth = function () {
  * Creates:
  *  - rowsRenderCalculator (before draw, to qualify rows for rendering)
  *  - rowsVisibleCalculator (after draw, to measure which rows are actually visible)
+ *
  * @returns {WalkontableViewportRowsCalculator}
  */
 WalkontableViewport.prototype.createRowsCalculator = function (visible) {
   this.rowHeaderWidth = NaN;
-
   var height;
+
   if (this.instance.wtSettings.settings.renderAllRows) {
     height = Infinity;
   }
@@ -198,14 +201,14 @@ WalkontableViewport.prototype.createRowsCalculator = function (visible) {
     height = this.getViewportHeight();
   }
 
-  var pos = this.instance.wtScrollbars.vertical.getScrollPosition() - this.instance.wtScrollbars.vertical.getTableParentOffset();
+  var pos = Handsontable.Dom.getScrollTop(this.instance.wtOverlays.mainTableScrollableElement) - this.instance.wtOverlays.topOverlay.getTableParentOffset();
   if (pos < 0) {
     pos = 0;
   }
 
   var fixedRowsTop = this.instance.getSetting('fixedRowsTop');
   if(fixedRowsTop) {
-    var fixedRowsHeight = this.instance.wtScrollbars.vertical.sumCellSizes(0, fixedRowsTop);
+    var fixedRowsHeight = this.instance.wtOverlays.topOverlay.sumCellSizes(0, fixedRowsTop);
     pos += fixedRowsHeight;
     height -= fixedRowsHeight;
   }
@@ -227,6 +230,7 @@ WalkontableViewport.prototype.createRowsCalculator = function (visible) {
  * Creates:
  *  - columnsRenderCalculator (before draw, to qualify columns for rendering)
  *  - columnsVisibleCalculator (after draw, to measure which columns are actually visible)
+ *
  * @returns {WalkontableViewportRowsCalculator}
  */
 WalkontableViewport.prototype.createColumnsCalculator = function (visible) {
@@ -234,16 +238,20 @@ WalkontableViewport.prototype.createColumnsCalculator = function (visible) {
 
   var width = this.getViewportWidth();
 
-  var pos = this.instance.wtScrollbars.horizontal.getScrollPosition() - this.instance.wtScrollbars.vertical.getTableParentOffset();
+  var pos = this.instance.wtOverlays.leftOverlay.getScrollPosition() - this.instance.wtOverlays.topOverlay.getTableParentOffset();
   if (pos < 0) {
     pos = 0;
   }
 
   var fixedColumnsLeft = this.instance.getSetting('fixedColumnsLeft');
   if(fixedColumnsLeft) {
-    var fixedColumnsWidth = this.instance.wtScrollbars.horizontal.sumCellSizes(0, fixedColumnsLeft);
+    var fixedColumnsWidth = this.instance.wtOverlays.leftOverlay.sumCellSizes(0, fixedColumnsLeft);
     pos += fixedColumnsWidth;
     width -= fixedColumnsWidth;
+  }
+
+  if(this.instance.wtTable.holder.clientWidth !== this.instance.wtTable.holder.offsetWidth) {
+    width -= Handsontable.Dom.getScrollbarWidth();
   }
 
   var that = this;
@@ -263,7 +271,9 @@ WalkontableViewport.prototype.createColumnsCalculator = function (visible) {
 
 /**
  * Creates rowsRenderCalculator and columnsRenderCalculator (before draw, to determine what rows and cols should be rendered)
+ *
  * @param fastDraw {Boolean} If TRUE, will try to avoid full redraw and only update the border positions. If FALSE or UNDEFINED, will perform a full redraw
+ * @returns fastDraw {Boolean} The fastDraw value, possibly modified
  */
 WalkontableViewport.prototype.createRenderCalculators = function (fastDraw) {
   if (fastDraw) {
@@ -300,7 +310,7 @@ WalkontableViewport.prototype.createVisibleCalculators = function () {
  * Returns TRUE if all proposed visible rows are already rendered (meaning: redraw is not needed)
  * Returns FALSE if at least one proposed visible row is not already rendered (meaning: redraw is needed)
  *
- * @returns {boolean}
+ * @returns {Boolean}
  */
 WalkontableViewport.prototype.areAllProposedVisibleRowsAlreadyRendered = function (proposedRowsVisibleCalculator) {
   if (this.rowsVisibleCalculator) {
@@ -328,7 +338,7 @@ WalkontableViewport.prototype.areAllProposedVisibleRowsAlreadyRendered = functio
  * Returns TRUE if all proposed visible columns are already rendered (meaning: redraw is not needed)
  * Returns FALSE if at least one proposed visible column is not already rendered (meaning: redraw is needed)
  *
- * @returns {boolean}
+ * @returns {Boolean}
  */
 WalkontableViewport.prototype.areAllProposedVisibleColumnsAlreadyRendered = function (proposedColumnsVisibleCalculator) {
   if (this.columnsVisibleCalculator) {

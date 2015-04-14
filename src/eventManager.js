@@ -19,6 +19,74 @@ Handsontable.eventManager = function (instance) {
     instance.eventListeners = [];
   }
 
+  function extendEvent(event) {
+    var
+      componentName = 'HOT-TABLE',
+      isHotTableSpotted,
+      fromElement,
+      realTarget,
+      target,
+      len;
+
+    event.isTargetWebComponent = false;
+    event.realTarget = event.target;
+
+    if (!Handsontable.eventManager.isHotTableEnv) {
+      return event;
+    }
+    event = Handsontable.Dom.polymerWrap(event);
+    len = event.path.length;
+
+    while (len --) {
+      if (event.path[len].nodeName === componentName) {
+        isHotTableSpotted = true;
+
+      } else if (isHotTableSpotted && event.path[len].shadowRoot) {
+        target = event.path[len];
+
+        break;
+      }
+      if (len === 0 && !target) {
+        target = event.path[len];
+      }
+    }
+    if (!target) {
+      target = event.target;
+    }
+    event.isTargetWebComponent = true;
+
+    if (Handsontable.Dom.isWebComponentSupportedNatively()) {
+      event.realTarget = event.srcElement || event.toElement;
+
+    } else if (instance instanceof Handsontable.Core || instance instanceof Walkontable) {
+      // Polymer doesn't support `event.target` property properly we must emulate it ourselves
+      if (instance instanceof Handsontable.Core) {
+        fromElement = instance.view.wt.wtTable.TABLE;
+
+      } else if (instance instanceof Walkontable) {
+        // .wtHider
+        fromElement = instance.wtTable.TABLE.parentNode.parentNode;
+      }
+      realTarget = Handsontable.Dom.closest(event.target, [componentName], fromElement);
+
+      if (realTarget) {
+        event.realTarget = fromElement.querySelector(componentName) || event.target;
+      } else {
+        event.realTarget = event.target;
+      }
+    }
+
+    Object.defineProperty(event, 'target', {
+      get: function() {
+        return Handsontable.Dom.polymerWrap(target);
+      },
+      enumerable: true,
+      configurable: true
+    });
+
+    return event;
+  }
+
   /**
    * Add Event
    *
@@ -30,7 +98,7 @@ Handsontable.eventManager = function (instance) {
   addEvent = function (element, event, callback) {
     var callbackProxy;
 
-    callbackProxy = function (event) {
+    callbackProxy = function callbackProxy(event) {
       if (event.target == void 0 && event.srcElement != void 0) {
         if (event.definePoperty) {
           event.definePoperty('target', {
@@ -40,7 +108,6 @@ Handsontable.eventManager = function (instance) {
           event.target = event.srcElement;
         }
       }
-
       if (event.preventDefault == void 0) {
         if (event.definePoperty) {
           event.definePoperty('preventDefault', {
@@ -54,6 +121,8 @@ Handsontable.eventManager = function (instance) {
           };
         }
       }
+      event = extendEvent(event);
+
       callback.call(this, event);
     };
 

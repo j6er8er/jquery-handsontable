@@ -16,6 +16,7 @@
  * @param overrideFn - function that changes calculated this.startRow, this.endRow (used by mergeCells.js plugin)
  * @param onlyFullyVisible {bool} - if TRUE, only startRow and endRow will be indexes of rows that are FULLY in viewport
  * @constructor
+ * @private
  */
 function WalkontableViewportRowsCalculator(height, scrollOffset, totalRows, rowHeightFn, overrideFn, onlyFullyVisible) {
   this.scrollOffset = scrollOffset;
@@ -28,6 +29,8 @@ function WalkontableViewportRowsCalculator(height, scrollOffset, totalRows, rowH
   var needReverse = true;
   var defaultRowHeight = 23;
   var startPositions = [];
+
+  // Calculate the number (start and end index) of rows needed
   for (var i = 0; i < totalRows; i++) {
     rowHeight = rowHeightFn(i);
     if (rowHeight === undefined) {
@@ -36,6 +39,8 @@ function WalkontableViewportRowsCalculator(height, scrollOffset, totalRows, rowH
     if (sum <= scrollOffset && !onlyFullyVisible) {
       this.startRow = i;
     }
+
+    // the row is within the "visible range"
     if (sum >= scrollOffset && sum + rowHeight <= scrollOffset + height) {
       if (this.startRow == null) {
         this.startRow = i;
@@ -53,7 +58,7 @@ function WalkontableViewportRowsCalculator(height, scrollOffset, totalRows, rowH
     }
   }
 
-  //If the rendering has reached the last row and there is still some space available in the viewport, we need to render in reverse in order to fill the whole viewport with rows
+  //If the estimation has reached the last row and there is still some space available in the viewport, we need to render in reverse in order to fill the whole viewport with rows
   if (this.endRow == totalRows - 1 && needReverse) {
     this.startRow = this.endRow;
     while(this.startRow > 0) {

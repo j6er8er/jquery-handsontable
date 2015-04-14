@@ -65,23 +65,28 @@ Handsontable.TableView = function (instance) {
     var next = event.target;
 
     if (isMouseDown) {
-      return; //it must have been started in a cell
+      return; // it must have been started in a cell
     }
 
-    if (next !== that.wt.wtTable.spreader) { //immediate click on "spreader" means click on the right side of vertical scrollbar
+    // immediate click on "spreader" means click on the right side of vertical scrollbar
+    if (next !== instance.view.wt.wtTable.holder) {
       while (next !== document.documentElement) {
         if (next === null) {
-          return; //click on something that was a row but now is detached (possibly because your click triggered a rerender)
+          if (event.isTargetWebComponent) {
+            break;
+          }
+          // click on something that was a row but now is detached (possibly because your click triggered a rerender)
+          return;
         }
-       if (next === instance.rootElement) {
-          return; //click inside container
+        if (next === instance.rootElement) {
+          // click inside container
+          return;
         }
         next = next.parentNode;
       }
     }
 
-    //function did not return until here, we have an outside click!
-
+    // function did not return until here, we have an outside click!
     if (that.settings.outsideClickDeselects) {
       instance.deselectCell();
     }
@@ -225,9 +230,9 @@ Handsontable.TableView = function (instance) {
 
       isMouseDown = true;
 
-      Handsontable.hooks.run(instance, 'beforeOnCellMouseDown', event, coords, TD);
-
       Handsontable.Dom.enableImmediatePropagation(event);
+
+      Handsontable.hooks.run(instance, 'beforeOnCellMouseDown', event, coords, TD);
 
       if (!event.isImmediatePropagationStopped()) {
 
@@ -240,7 +245,7 @@ Handsontable.TableView = function (instance) {
           }
         }
         else {
-          if (coords.row < 0 || coords.col < 0) {
+          if ((coords.row < 0 || coords.col < 0) && (coords.row >= 0 || coords.col >= 0)) {
             if (coords.row < 0) {
               instance.selectCell(0, coords.col, instance.countRows() - 1, coords.col);
               instance.selection.setSelectedHeaders(false, true);
@@ -251,6 +256,9 @@ Handsontable.TableView = function (instance) {
             }
           }
           else {
+            coords.row = coords.row < 0 ? 0 : coords.row;
+            coords.col = coords.col < 0 ? 0 : coords.col;
+
             instance.selection.setRangeStart(coords);
           }
         }
@@ -463,6 +471,7 @@ Handsontable.TableView.prototype.appendColHeader = function (col, TH) {
     Handsontable.Dom.fastInnerHTML(SPAN, this.instance.getColHeader(col));
   } else {
     Handsontable.Dom.fastInnerText(SPAN, String.fromCharCode(160)); // workaround for https://github.com/handsontable/handsontable/issues/1946
+    Handsontable.Dom.addClass(SPAN, 'cornerHeader');
   }
   DIV.appendChild(SPAN);
 

@@ -1,6 +1,7 @@
 /**
  * Plugin used to scroll Handsontable by selecting a cell and dragging outside of visible viewport
  * @constructor
+ * @private
  */
 function DragToScroll() {
   this.boundaries = null;
@@ -57,7 +58,7 @@ var instance;
 if (typeof Handsontable !== 'undefined') {
   var setupListening = function (instance) {
     instance.dragToScrollListening = false;
-    var scrollHandler = instance.view.wt.wtScrollbars.vertical.scrollHandler; //native scroll
+    var scrollHandler = instance.view.wt.wtTable.holder; //native scroll
     dragToScroll = new DragToScroll();
     if (scrollHandler === window) {
       //not much we can do currently

@@ -1,17 +1,13 @@
 (function (Handsontable) {
   var DateEditor = Handsontable.editors.TextEditor.prototype.extend();
 
-  var $;
-
   DateEditor.prototype.init = function () {
-    if (typeof jQuery != 'undefined') {
-      $ = jQuery;
-    } else {
-      throw new Error("You need to include jQuery to your project in order to use the jQuery UI Datepicker.");
+    if (typeof moment !== 'function') {
+      throw new Error("You need to include moment.js to your project.");
     }
 
-    if (!$.datepicker) {
-      throw new Error("jQuery UI Datepicker dependency not found. Did you forget to include jquery-ui.custom.js or its substitute?");
+    if (typeof Pikaday !== 'function') {
+      throw new Error("You need to include Pikaday to your project.");
     }
 
     Handsontable.editors.TextEditor.prototype.init.apply(this, arguments);
@@ -20,91 +16,154 @@
     var that = this;
 
     this.instance.addHook('afterDestroy', function () {
+      that.parentDestroyed = true;
       that.destroyElements();
     });
-
   };
 
   DateEditor.prototype.createElements = function () {
+    var that = this;
     Handsontable.editors.TextEditor.prototype.createElements.apply(this, arguments);
 
+    this.defaultDateFormat = 'DD/MM/YYYY';
     this.datePicker = document.createElement('DIV');
-    Handsontable.Dom.addClass(this.datePicker, 'htDatepickerHolder');
     this.datePickerStyle = this.datePicker.style;
     this.datePickerStyle.position = 'absolute';
     this.datePickerStyle.top = 0;
     this.datePickerStyle.left = 0;
-    this.datePickerStyle.zIndex = 99;
-    document.body.appendChild(this.datePicker);
-    this.$datePicker = $(this.datePicker);
+    this.datePickerStyle.zIndex = 9999;
 
-    var that = this;
+    Handsontable.Dom.addClass(this.datePicker, 'htDatepickerHolder');
+    document.body.appendChild(this.datePicker);
+
+    var htInput = this.TEXTAREA;
+
     var defaultOptions = {
-      dateFormat: "yy-mm-dd",
-      showButtonPanel: true,
-      changeMonth: true,
-      changeYear: true,
+      format: that.defaultDateFormat,
+      field: htInput,
+      trigger: htInput,
+      container: that.datePicker,
+      reposition: false,
+      bound: false,
       onSelect: function (dateStr) {
+        if (!isNaN(dateStr.getTime())) {
+          dateStr = moment(dateStr).format(that.cellProperties.dateFormat || that.defaultDateFormat);
+        }
         that.setValue(dateStr);
-        that.finishEditing(false);
+        that.hideDatepicker();
+      },
+      onClose: function () {
+        if(!that.parentDestroyed) {
+          that.finishEditing(false);
+        }
       }
     };
-    this.$datePicker.datepicker(defaultOptions);
+
+    this.$datePicker = new Pikaday(defaultOptions);
 
     var eventManager = Handsontable.eventManager(this);
 
     /**
-     * Prevent recognizing clicking on jQuery Datepicker as clicking outside of table
+     * Prevent recognizing clicking on datepicker as clicking outside of table
      */
     eventManager.addEventListener(this.datePicker, 'mousedown', function (event) {
       Handsontable.helper.stopPropagation(event);
-      //event.stopPropagation();
     });
 
     this.hideDatepicker();
   };
 
   DateEditor.prototype.destroyElements = function () {
-    this.$datePicker.datepicker('destroy');
-    this.$datePicker.remove();
-    //var eventManager = Handsontable.eventManager(this);
-    //eventManager.removeEventListener(this.datePicker, 'mousedown');
+    this.$datePicker.destroy();
   };
 
-  DateEditor.prototype.open = function () {
+  DateEditor.prototype.prepare = function () {
+    this._opened = false;
+    Handsontable.editors.TextEditor.prototype.prepare.apply(this, arguments);
+  };
+
+  DateEditor.prototype.open = function (event) {
     Handsontable.editors.TextEditor.prototype.open.call(this);
-    this.showDatepicker();
+    this.showDatepicker(event);
+  };
+
+  DateEditor.prototype.close = function () {
+    var that = this;
+    this._opened = false;
+    this.instance._registerTimeout(setTimeout(function () {
+      that.instance.selection.refreshBorders();
+    }, 0));
+
+    Handsontable.editors.TextEditor.prototype.close.apply(this, arguments);
   };
 
   DateEditor.prototype.finishEditing = function (isCancelled, ctrlDown) {
+    if (isCancelled) { // pressed ESC, restore original value
+      //var value = this.instance.getDataAtCell(this.row, this.col);
+      var value = this.originalValue;
+      if (value !== void 0) {
+        this.setValue(value);
+      }
+    }
+
     this.hideDatepicker();
     Handsontable.editors.TextEditor.prototype.finishEditing.apply(this, arguments);
   };
 
-  DateEditor.prototype.showDatepicker = function () {
+  DateEditor.prototype.showDatepicker = function (event) {
     var offset = this.TD.getBoundingClientRect(),
-      DatepickerSettings,
-      datepickerSettings;
+      dateFormat = this.cellProperties.dateFormat || this.defaultDateFormat,
+      datePickerConfig = this.$datePicker.config(),
+      dateStr,
+      isMouseDown = this.instance.view.isMouseDown(),
+      isMeta = event ? Handsontable.helper.isMetaKey(event.keyCode) : false;
 
     this.datePickerStyle.top = (window.pageYOffset + offset.top + Handsontable.Dom.outerHeight(this.TD)) + 'px';
     this.datePickerStyle.left = (window.pageXOffset + offset.left) + 'px';
 
-    DatepickerSettings = function () {};
-    DatepickerSettings.prototype = this.cellProperties;
-    datepickerSettings = new DatepickerSettings();
-    datepickerSettings.defaultDate = this.originalValue || void 0;
-    this.$datePicker.datepicker('option', datepickerSettings);
+    this.$datePicker._onInputFocus = function () {};
+    datePickerConfig.format = dateFormat;
 
     if (this.originalValue) {
-      this.$datePicker.datepicker('setDate', this.originalValue);
+      dateStr = this.originalValue;
+
+      if (moment(dateStr, dateFormat, true).isValid()) {
+        this.$datePicker.setMoment(moment(dateStr, dateFormat), true);
+      }
+
+      if (!isMeta) {
+        if (!isMouseDown) {
+          this.setValue('');
+        }
+      }
+
+    } else {
+      if (this.cellProperties.defaultDate) {
+        dateStr = this.cellProperties.defaultDate;
+
+        datePickerConfig.defaultDate = dateStr;
+
+        if (moment(dateStr, dateFormat, true).isValid()) {
+          this.$datePicker.setMoment(moment(dateStr, dateFormat), true);
+        }
+
+        if (!isMeta) {
+          if (!isMouseDown) {
+            this.setValue('');
+          }
+        }
+        //this.setValue(dateStr);
+      }
     }
+
     this.datePickerStyle.display = 'block';
+    this.$datePicker.show();
   };
 
   DateEditor.prototype.hideDatepicker = function () {
     this.datePickerStyle.display = 'none';
+    this.$datePicker.hide();
   };
-
 
   Handsontable.editors.DateEditor = DateEditor;
   Handsontable.editors.registerEditor('date', DateEditor);

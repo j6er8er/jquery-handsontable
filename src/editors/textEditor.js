@@ -22,13 +22,12 @@
   };
 
   var onBeforeKeyDown =  function onBeforeKeyDown(event){
+    var instance = this,
+      that = instance.getActiveEditor(),
+      keyCodes, ctrlDown;
 
-    var instance = this;
-    var that = instance.getActiveEditor();
-
-    var keyCodes = Handsontable.helper.keyCode;
-    var ctrlDown = (event.ctrlKey || event.metaKey) && !event.altKey; //catch CTRL but not right ALT (which in some systems triggers ALT+CTRL)
-
+    keyCodes = Handsontable.helper.keyCode;
+    ctrlDown = (event.ctrlKey || event.metaKey) && !event.altKey; //catch CTRL but not right ALT (which in some systems triggers ALT+CTRL)
     Handsontable.Dom.enableImmediatePropagation(event);
 
     //Process only events that have been fired in the editor
@@ -60,8 +59,15 @@
         var isMultipleSelection = !(selected[0] === selected[2] && selected[1] === selected[3]);
         if ((ctrlDown && !isMultipleSelection) || event.altKey) { //if ctrl+enter or alt+enter, add new line
           if(that.isOpened()){
-            that.setValue(that.getValue() + '\n');
-            that.focus();
+            var caretPosition = Handsontable.Dom.getCaretPosition(that.TEXTAREA),
+                value = that.getValue();
+
+            var newValue = value.slice(0, caretPosition) + '\n' + value.slice(caretPosition);
+
+            that.setValue(newValue);
+
+            Handsontable.Dom.setCaretPosition(that.TEXTAREA, caretPosition + 1);
+
           } else {
             that.beginEditing(that.originalValue + '\n');
           }
@@ -164,15 +170,15 @@
 
     switch (editorSection) {
       case 'top':
-        editedCell = this.instance.view.wt.wtScrollbars.vertical.clone.wtTable.getCell({row: this.row, col: this.col});
+        editedCell = this.instance.view.wt.wtOverlays.topOverlay.clone.wtTable.getCell({row: this.row, col: this.col});
         this.textareaParentStyle.zIndex = 101;
         break;
       case 'corner':
-        editedCell = this.instance.view.wt.wtScrollbars.corner.clone.wtTable.getCell({row: this.row, col: this.col});
+        editedCell = this.instance.view.wt.wtOverlays.topLeftCornerOverlay.clone.wtTable.getCell({row: this.row, col: this.col});
         this.textareaParentStyle.zIndex = 103;
         break;
       case 'left':
-        editedCell = this.instance.view.wt.wtScrollbars.horizontal.clone.wtTable.getCell({row: this.row, col: this.col});
+        editedCell = this.instance.view.wt.wtOverlays.leftOverlay.clone.wtTable.getCell({row: this.row, col: this.col});
         this.textareaParentStyle.zIndex = 102;
         break;
       default :
@@ -200,27 +206,29 @@
     }
     //var $td = $(this.TD); //because old td may have been scrolled out with scrollViewport
 
-    var currentOffset = Handsontable.Dom.offset(this.TD);
-    var containerOffset = Handsontable.Dom.offset(this.instance.rootElement);
-    var editTop = currentOffset.top - containerOffset.top - 1;
-    var editLeft = currentOffset.left - containerOffset.left - 1;
+    var currentOffset = Handsontable.Dom.offset(this.TD),
+      containerOffset = Handsontable.Dom.offset(this.instance.rootElement),
+	  scrollableContainer = Handsontable.Dom.getScrollableElement(this.TD),
+      editTop = currentOffset.top - containerOffset.top - 1 - (scrollableContainer.scrollTop || 0),
+      editLeft = currentOffset.left - containerOffset.left - 1 - (scrollableContainer.scrollLeft || 0),
 
-    var settings = this.instance.getSettings();
-    var rowHeadersCount = settings.rowHeaders === false ? 0 : 1;
-    var colHeadersCount = settings.colHeaders === false ? 0 : 1;
-    var editorSection = this.checkEditorSection();
-    var cssTransformOffset;
+      settings = this.instance.getSettings(),
+      rowHeadersCount = settings.rowHeaders  ? 1 : 0,
+      colHeadersCount = settings.colHeaders  ? 1 : 0,
+      editorSection = this.checkEditorSection(),
+      backgroundColor = this.TD.style.backgroundColor,
+      cssTransformOffset;
 
     // TODO: Refactor this to the new instance.getCell method (from #ply-59), after 0.12.1 is released
     switch(editorSection) {
       case 'top':
-        cssTransformOffset = Handsontable.Dom.getCssTransform(this.instance.view.wt.wtScrollbars.vertical.clone.wtTable.holder.parentNode);
+        cssTransformOffset = Handsontable.Dom.getCssTransform(this.instance.view.wt.wtOverlays.topOverlay.clone.wtTable.holder.parentNode);
         break;
       case 'left':
-        cssTransformOffset = Handsontable.Dom.getCssTransform(this.instance.view.wt.wtScrollbars.horizontal.clone.wtTable.holder.parentNode);
+        cssTransformOffset = Handsontable.Dom.getCssTransform(this.instance.view.wt.wtOverlays.leftOverlay.clone.wtTable.holder.parentNode);
         break;
       case 'corner':
-        cssTransformOffset = Handsontable.Dom.getCssTransform(this.instance.view.wt.wtScrollbars.corner.clone.wtTable.holder.parentNode);
+        cssTransformOffset = Handsontable.Dom.getCssTransform(this.instance.view.wt.wtOverlays.topLeftCornerOverlay.clone.wtTable.holder.parentNode);
         break;
     }
 
@@ -230,13 +238,10 @@
     if (editLeft < 0) {
       editLeft = 0;
     }
-    if (rowHeadersCount > 0 && parseInt(this.TD.style.borderTopWidth, 10) > 0) {
+
+    if(colHeadersCount && this.instance.getSelected()[0] === 0) {
       editTop += 1;
     }
-    if (colHeadersCount > 0 && parseInt(this.TD.style.borderLeftWidth, 10) > 0) {
-      editLeft += 1;
-    }
-
 
     if(cssTransformOffset && cssTransformOffset != -1) {
       this.textareaParentStyle[cssTransformOffset[0]] = cssTransformOffset[1];
@@ -244,18 +249,21 @@
       Handsontable.Dom.resetCssTransform(this.textareaParentStyle);
     }
 
+
+
     this.textareaParentStyle.top = editTop + 'px';
     this.textareaParentStyle.left = editLeft + 'px';
 
     ///end prepare textarea position
 
 
-    var cellTopOffset = this.TD.offsetTop - this.instance.view.wt.wtScrollbars.vertical.getScrollPosition(),
-        cellLeftOffset = this.TD.offsetLeft - this.instance.view.wt.wtScrollbars.horizontal.getScrollPosition();
+    var cellTopOffset = this.TD.offsetTop - this.instance.view.wt.wtOverlays.topOverlay.getScrollPosition(),
+        cellLeftOffset = this.TD.offsetLeft - this.instance.view.wt.wtOverlays.leftOverlay.getScrollPosition();
 
     var width = Handsontable.Dom.innerWidth(this.TD) - 8  //$td.width()
-      , maxWidth = this.instance.view.maximumVisibleElementWidth(cellLeftOffset) - 10 //10 is TEXTAREAs border and padding
-      , height = Handsontable.Dom.outerHeight(this.TD) - 4  //$td.outerHeight() - 4
+      , maxWidth = this.instance.view.maximumVisibleElementWidth(cellLeftOffset) - 10 //10 is TEXTAREAs padding
+
+      , height = this.TD.scrollHeight + 1
       , maxHeight = this.instance.view.maximumVisibleElementHeight(cellTopOffset) - 2; //10 is TEXTAREAs border and padding
 
     if (parseInt(this.TD.style.borderTopWidth, 10) > 0) {
@@ -269,6 +277,10 @@
 
     this.TEXTAREA.style.fontSize = Handsontable.Dom.getComputedStyle(this.TD).fontSize;
     this.TEXTAREA.style.fontFamily = Handsontable.Dom.getComputedStyle(this.TD).fontFamily;
+
+    this.TEXTAREA.style.backgroundColor = ''; //RESET STYLE
+
+    this.TEXTAREA.style.backgroundColor = backgroundColor ? backgroundColor : Handsontable.Dom.getComputedStyle(this.TEXTAREA).backgroundColor;
 
     this.autoResize.init(this.TEXTAREA, {
       minHeight: Math.min(height, maxHeight),

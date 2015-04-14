@@ -1,5 +1,8 @@
 /**
- * Handsontable UndoRedo class
+ * Handsontable UndoRedo plugin class
+ *
+ * @plugin
+ * @class Handsontable.UndoRedo
  */
 (function(Handsontable){
   Handsontable.UndoRedo = function (instance) {
@@ -60,6 +63,11 @@
       var action = new Handsontable.UndoRedo.RemoveColumnAction(index, removedData, headers);
       plugin.done(action);
     });
+
+    instance.addHook("beforeCellAlignment", function (stateBefore, range, type, alignment) {
+      var action = new Handsontable.UndoRedo.CellAlignmentAction(stateBefore, range, type, alignment);
+      plugin.done(action);
+    });
   };
 
   Handsontable.UndoRedo.prototype.done = function (action) {
@@ -70,7 +78,7 @@
   };
 
   /**
-   * Undo operation from current revision
+   * Undo last edit.
    */
   Handsontable.UndoRedo.prototype.undo = function () {
     if (this.isUndoAvailable()) {
@@ -89,7 +97,7 @@
   };
 
   /**
-   * Redo operation from current revision
+   * Redo edit (used to reverse an undo).
    */
   Handsontable.UndoRedo.prototype.redo = function () {
     if (this.isRedoAvailable()) {
@@ -108,23 +116,25 @@
   };
 
   /**
-   * Returns true if undo point is available
-   * @return {Boolean}
+   * Check if undo action is available.
+   *
+   * @return {Boolean} Return `true` if undo can be performed, `false` otherwise
    */
   Handsontable.UndoRedo.prototype.isUndoAvailable = function () {
     return this.doneActions.length > 0;
   };
 
   /**
-   * Returns true if redo point is available
-   * @return {Boolean}
+   * Check if redo action is available.
+   *
+   * @return {Boolean} Return `true` if redo can be performed, `false` otherwise.
    */
   Handsontable.UndoRedo.prototype.isRedoAvailable = function () {
     return this.undoneActions.length > 0;
   };
 
   /**
-   * Clears undo history
+   * Clears undo history.
    */
   Handsontable.UndoRedo.prototype.clear = function () {
     this.doneActions.length = 0;
@@ -194,6 +204,12 @@
   };
   Handsontable.helper.inherit(Handsontable.UndoRedo.CreateRowAction, Handsontable.UndoRedo.Action);
   Handsontable.UndoRedo.CreateRowAction.prototype.undo = function (instance, undoneCallback) {
+    var rowCount = instance.countRows(),
+      minSpareRows = instance.getSettings().minSpareRows;
+    if(this.index >= rowCount && this.index - minSpareRows < rowCount) {
+      this.index -= minSpareRows; // work around the situation where the needed row was removed due to an 'undo' of a made change
+    }
+
     instance.addHookOnce('afterRemoveRow', undoneCallback);
     instance.alter('remove_row', this.index, this.amount);
   };
@@ -233,6 +249,41 @@
   Handsontable.UndoRedo.CreateColumnAction.prototype.redo = function (instance, redoneCallback) {
     instance.addHookOnce('afterCreateCol', redoneCallback);
     instance.alter('insert_col', this.index + 1, this.amount);
+  };
+
+  Handsontable.UndoRedo.CellAlignmentAction = function (stateBefore, range, type, alignment) {
+    this.stateBefore = stateBefore;
+    this.range = range;
+    this.type = type;
+    this.alignment = alignment;
+  };
+  Handsontable.UndoRedo.CellAlignmentAction.prototype.undo = function(instance, undoneCallback) {
+    if (!instance.contextMenu) {
+      return;
+    }
+
+    for (var row = this.range.from.row; row <= this.range.to.row; row++) {
+      for (var col = this.range.from.col; col <= this.range.to.col; col++) {
+        instance.setCellMeta(row, col, 'className', this.stateBefore[row][col] || ' htLeft');
+      }
+    }
+
+    instance.addHookOnce('afterRender', undoneCallback);
+    instance.render();
+  };
+  Handsontable.UndoRedo.CellAlignmentAction.prototype.redo = function(instance, undoneCallback) {
+    if (!instance.contextMenu) {
+      return;
+    }
+
+    for (var row = this.range.from.row; row <= this.range.to.row; row++) {
+      for (var col = this.range.from.col; col <= this.range.to.col; col++) {
+        instance.contextMenu.align.call(instance, this.range, this.type, this.alignment);
+      }
+    }
+
+    instance.addHookOnce('afterRender', undoneCallback);
+    instance.render();
   };
 
   Handsontable.UndoRedo.RemoveColumnAction = function (index, data, headers) {
@@ -277,6 +328,13 @@
 
     if(pluginEnabled){
       if(!instance.undoRedo){
+        /**
+         * Instance of Handsontable.UndoRedo Plugin {@link Handsontable.UndoRedo}
+         *
+         * @alias undoRedo
+         * @memberof! Handsontable.Core#
+         * @type {UndoRedo}
+         */
         instance.undoRedo = new Handsontable.UndoRedo(instance);
 
         exposeUndoRedoMethods(instance);
@@ -320,23 +378,48 @@
     }
   }
 
-  function exposeUndoRedoMethods(instance){
+  function exposeUndoRedoMethods(instance) {
+    /**
+     * {@link Handsontable.UndoRedo#undo}
+     * @alias undo
+     * @memberof! Handsontable.Core#
+     */
     instance.undo = function(){
       return instance.undoRedo.undo();
     };
 
+    /**
+     * {@link Handsontable.UndoRedo#redo}
+     * @alias redo
+     * @memberof! Handsontable.Core#
+     */
     instance.redo = function(){
       return instance.undoRedo.redo();
     };
 
+    /**
+     * {@link Handsontable.UndoRedo#isUndoAvailable}
+     * @alias isUndoAvailable
+     * @memberof! Handsontable.Core#
+     */
     instance.isUndoAvailable = function(){
       return instance.undoRedo.isUndoAvailable();
     };
 
+    /**
+     * {@link Handsontable.UndoRedo#isRedoAvailable}
+     * @alias isRedoAvailable
+     * @memberof! Handsontable.Core#
+     */
     instance.isRedoAvailable = function(){
       return instance.undoRedo.isRedoAvailable();
     };
 
+    /**
+     * {@link Handsontable.UndoRedo#clear}
+     * @alias clearUndo
+     * @memberof! Handsontable.Core#
+     */
     instance.clearUndo = function(){
       return instance.undoRedo.clear();
     };

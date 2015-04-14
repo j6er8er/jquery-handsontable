@@ -4,6 +4,7 @@ function WalkontableScroll(instance) {
 
 /**
  * Scrolls viewport to a cell by minimum number of cells
+ *
  * @param {WalkontableCellCoords} coords
  */
 WalkontableScroll.prototype.scrollViewport = function (coords) {
@@ -23,15 +24,15 @@ WalkontableScroll.prototype.scrollViewport = function (coords) {
   }
 
     if (coords.row > this.instance.wtTable.getLastVisibleRow()) {
-      this.instance.wtScrollbars.vertical.scrollTo(coords.row, true);
+      this.instance.wtOverlays.topOverlay.scrollTo(coords.row, true);
     } else if (coords.row >= this.instance.getSetting('fixedRowsTop') && coords.row < this.instance.wtTable.getFirstVisibleRow()){
-      this.instance.wtScrollbars.vertical.scrollTo(coords.row);
+      this.instance.wtOverlays.topOverlay.scrollTo(coords.row);
     }
 
     if (coords.col > this.instance.wtTable.getLastVisibleColumn()) {
-      this.instance.wtScrollbars.horizontal.scrollTo(coords.col, true);
-    } else if (coords.col > this.instance.getSetting('fixedColumnsLeft') && coords.col < this.instance.wtTable.getFirstVisibleColumn()){
-      this.instance.wtScrollbars.horizontal.scrollTo(coords.col);
+      this.instance.wtOverlays.leftOverlay.scrollTo(coords.col, true);
+    } else if (coords.col >= this.instance.getSetting('fixedColumnsLeft') && coords.col < this.instance.wtTable.getFirstVisibleColumn()){
+      this.instance.wtOverlays.leftOverlay.scrollTo(coords.col);
     }
 
   //}
