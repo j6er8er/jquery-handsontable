@@ -194,6 +194,10 @@ var handsontableKeyTriggerFactory = function (type) {
           ev.keyCode = 8;
           break;
 
+        case 'delete':
+          ev.keyCode = 46;
+          break;
+
         case 'space':
           ev.keyCode = 32;
           break;
@@ -331,7 +335,7 @@ var handsontableMethodFactory = function (method) {
     try{
       instance = spec().$container.handsontable('getInstance');
     } catch (err) {
-      console.log(err);
+      console.error(err);
     }
 
     if (!instance) {
