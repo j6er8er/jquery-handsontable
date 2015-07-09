@@ -6,14 +6,9 @@ import {HandsontableEditor} from './handsontableEditor.js';
 
 var AutocompleteEditor = HandsontableEditor.prototype.extend();
 
-export {AutocompleteEditor};
-
-Handsontable.editors = Handsontable.editors || {};
-Handsontable.editors.AutocompleteEditor = AutocompleteEditor;
-
 /**
  * @private
- * @editor
+ * @editor AutocompleteEditor
  * @class AutocompleteEditor
  * @dependencies HandsontableEditor
  */
@@ -281,5 +276,7 @@ AutocompleteEditor.prototype.getDropdownHeight = function() {
 
   return this.choices.length >= 10 ? 10 * firstRowHeight : this.choices.length * firstRowHeight + 8;
 };
+
+export {AutocompleteEditor};
 
 registerEditor('autocomplete', AutocompleteEditor);

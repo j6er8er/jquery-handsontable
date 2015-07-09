@@ -7,13 +7,42 @@
  * Licensed under the MIT license.
  * http://handsontable.com/
  *
- * Date: Thu Jul 09 2015 10:02:31 GMT-0700 (PDT)
+<<<<<<< HEAD
+ * Date: Wed Jun 03 2015 13:38:59 GMT-0700 (PDT)
+=======
+ * Date: Thu Jun 25 2015 14:04:28 GMT+0200 (CEST)
+>>>>>>> upstream/master
  */
 /*jslint white: true, browser: true, plusplus: true, indent: 4, maxerr: 50 */
 
 window.Handsontable = {
+<<<<<<< HEAD
+  version: '0.15.0-beta5',
+  buildDate: 'Wed Jun 03 2015 13:38:59 GMT-0700 (PDT)'
+};
+require=(function outer (modules, cache, entry) {
+  // Save the require from previous bundle to this closure if any
+  var previousRequire = typeof require == "function" && require;
+  var globalNS = JSON.parse('{"zeroclipboard":"ZeroClipboard","copyPaste":"copyPaste","SheetClip":"SheetClip","jsonpatch":"jsonpatch","moment":"moment","numeral":"numeral","autoResize":"autoResize","pikaday":"Pikaday"}') || {};
+
+  function newRequire(name, jumped){
+    if(!cache[name]) {
+
+      if(!modules[name]) {
+        // if we cannot find the the module within our internal map or
+        // cache jump to the current global require ie. the last bundle
+        // that was added to the page.
+        var currentRequire = typeof require == "function" && require;
+        if (!jumped && currentRequire) return currentRequire(name, true);
+
+        // If there are other bundles on this page the require from the
+        // previous one is saved to 'previousRequire'. Repeat this as
+        // many times as there are bundles until the module is found or
+        // we exhaust the require chain.
+        if (previousRequire) return previousRequire(name, true);
+=======
   version: '0.15.1',
-  buildDate: 'Thu Jul 09 2015 10:02:31 GMT-0700 (PDT)'
+  buildDate: 'Thu Jun 25 2015 14:04:28 GMT+0200 (CEST)'
 };
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.Handsontable = f()}})(function(){var define,module,exports;return (function init(modules, cache, entry) {
   (function outer (modules, cache, entry) {
@@ -41,6 +70,7 @@ window.Handsontable = {
           if (globalNS[name] && typeof window[globalNS[name]] !== 'undefined') {
             return window[globalNS[name]];
           }
+>>>>>>> upstream/master
 
           var err = new Error('Cannot find module \'' + name + '\'');
           err.code = 'MODULE_NOT_FOUND';
@@ -21819,9 +21849,6 @@ if (typeof exports !== "undefined") {
         minMonth: undefined,
         maxMonth: undefined,
 
-        startRange: null,
-        endRange: null,
-
         isRTL: false,
 
         // Additional text to append to the year in the calendar title
@@ -21849,9 +21876,6 @@ if (typeof exports !== "undefined") {
             weekdaysShort : ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
         },
 
-        // Theme Classname
-        theme: null,
-
         // callback function
         onSelect: null,
         onOpen: null,
@@ -21872,34 +21896,25 @@ if (typeof exports !== "undefined") {
         return abbr ? opts.i18n.weekdaysShort[day] : opts.i18n.weekdays[day];
     },
 
-    renderDay = function(opts)
+    renderDay = function(d, m, y, isSelected, isToday, isDisabled, isEmpty)
     {
-        if (opts.isEmpty) {
+        if (isEmpty) {
             return '<td class="is-empty"></td>';
         }
         var arr = [];
-        if (opts.isDisabled) {
+        if (isDisabled) {
             arr.push('is-disabled');
         }
-        if (opts.isToday) {
+        if (isToday) {
             arr.push('is-today');
         }
-        if (opts.isSelected) {
+        if (isSelected) {
             arr.push('is-selected');
         }
-        if (opts.isInRange) {
-            arr.push('is-inrange');
-        }
-        if (opts.isStartRange) {
-            arr.push('is-startrange');
-        }
-        if (opts.isEndRange) {
-            arr.push('is-endrange');
-        }
-        return '<td data-day="' + opts.day + '" class="' + arr.join(' ') + '">' +
+        return '<td data-day="' + d + '" class="' + arr.join(' ') + '">' +
                  '<button class="pika-button pika-day" type="button" ' +
-                    'data-pika-year="' + opts.year + '" data-pika-month="' + opts.month + '" data-pika-day="' + opts.day + '">' +
-                        opts.day +
+                    'data-pika-year="' + y + '" data-pika-month="' + m + '" data-pika-day="' + d + '">' +
+                        d +
                  '</button>' +
                '</td>';
     },
@@ -21951,7 +21966,7 @@ if (typeof exports !== "undefined") {
                 ((isMinYear && i < opts.minMonth) || (isMaxYear && i > opts.maxMonth) ? 'disabled' : '') + '>' +
                 opts.i18n.months[i] + '</option>');
         }
-        monthHtml = '<div class="pika-label">' + opts.i18n.months[month] + '<select class="pika-select pika-select-month" tabindex="-1">' + arr.join('') + '</select></div>';
+        monthHtml = '<div class="pika-label">' + opts.i18n.months[month] + '<select class="pika-select pika-select-month">' + arr.join('') + '</select></div>';
 
         if (isArray(opts.yearRange)) {
             i = opts.yearRange[0];
@@ -21966,7 +21981,7 @@ if (typeof exports !== "undefined") {
                 arr.push('<option value="' + i + '"' + (i === year ? ' selected': '') + '>' + (i) + '</option>');
             }
         }
-        yearHtml = '<div class="pika-label">' + year + opts.yearSuffix + '<select class="pika-select pika-select-year" tabindex="-1">' + arr.join('') + '</select></div>';
+        yearHtml = '<div class="pika-label">' + year + opts.yearSuffix + '<select class="pika-select pika-select-year">' + arr.join('') + '</select></div>';
 
         if (opts.showMonthAfterYear) {
             html += yearHtml + monthHtml;
@@ -22017,7 +22032,7 @@ if (typeof exports !== "undefined") {
                 return;
             }
 
-            if (!hasClass(target.parentNode, 'is-disabled')) {
+            if (!hasClass(target, 'is-disabled')) {
                 if (hasClass(target, 'pika-button') && !hasClass(target, 'is-empty')) {
                     self.setDate(new Date(target.getAttribute('data-pika-year'), target.getAttribute('data-pika-month'), target.getAttribute('data-pika-day')));
                     if (opts.bound) {
@@ -22078,9 +22093,7 @@ if (typeof exports !== "undefined") {
             else {
                 date = new Date(Date.parse(opts.field.value));
             }
-            if (isDate(date)) {
-              self.setDate(date);
-            }
+            self.setDate(isDate(date) ? date : null);
             if (!self._v) {
                 self.show();
             }
@@ -22106,7 +22119,7 @@ if (typeof exports !== "undefined") {
                 }
             }
             while ((pEl = pEl.parentNode));
-
+            
             if (!self._c) {
                 self._b = sto(function() {
                     self.hide();
@@ -22141,9 +22154,9 @@ if (typeof exports !== "undefined") {
         };
 
         self.el = document.createElement('div');
-        self.el.className = 'pika-single' + (opts.isRTL ? ' is-rtl' : '') + (opts.theme ? ' ' + opts.theme : '');
+        self.el.className = 'pika-single' + (opts.isRTL ? ' is-rtl' : '');
 
-        addEvent(self.el, 'ontouchend' in document ? 'touchend' : 'mousedown', self._onMouseDown, true);
+        addEvent(self.el, 'mousedown', self._onMouseDown, true);
         addEvent(self.el, 'change', self._onChange);
 
         if (opts.field) {
@@ -22211,15 +22224,13 @@ if (typeof exports !== "undefined") {
 
             opts.field = (opts.field && opts.field.nodeName) ? opts.field : null;
 
-            opts.theme = (typeof opts.theme) === 'string' && opts.theme ? opts.theme : null;
-
             opts.bound = !!(opts.bound !== undefined ? opts.field && opts.bound : opts.field);
 
             opts.trigger = (opts.trigger && opts.trigger.nodeName) ? opts.trigger : opts.field;
 
             opts.disableWeekends = !!opts.disableWeekends;
 
-            opts.disableDayFn = (typeof opts.disableDayFn) === 'function' ? opts.disableDayFn : null;
+            opts.disableDayFn = (typeof opts.disableDayFn) == "function" ? opts.disableDayFn : null;
 
             var nom = parseInt(opts.numberOfMonths, 10) || 1;
             opts.numberOfMonths = nom > 4 ? 4 : nom;
@@ -22234,7 +22245,9 @@ if (typeof exports !== "undefined") {
                 opts.maxDate = opts.minDate = false;
             }
             if (opts.minDate) {
-                this.setMinDate(opts.minDate);
+                setToStartOfDay(opts.minDate);
+                opts.minYear  = opts.minDate.getFullYear();
+                opts.minMonth = opts.minDate.getMonth();
             }
             if (opts.maxDate) {
                 setToStartOfDay(opts.maxDate);
@@ -22423,10 +22436,7 @@ if (typeof exports !== "undefined") {
          */
         setMinDate: function(value)
         {
-            setToStartOfDay(value);
             this._o.minDate = value;
-            this._o.minYear  = value.getFullYear();
-            this._o.minMonth = value.getMonth();
         },
 
         /**
@@ -22435,16 +22445,6 @@ if (typeof exports !== "undefined") {
         setMaxDate: function(value)
         {
             this._o.maxDate = value;
-        },
-
-        setStartRange: function(value)
-        {
-            this._o.startRange = value;
-        },
-
-        setEndRange: function(value)
-        {
-            this._o.endRange = value;
         },
 
         /**
@@ -22499,19 +22499,13 @@ if (typeof exports !== "undefined") {
 
         adjustPosition: function()
         {
-            var field, pEl, width, height, viewportWidth, viewportHeight, scrollTop, left, top, clientRect;
-            
             if (this._o.container) return;
-            
-            this.el.style.position = 'absolute';
-            
-            field = this._o.trigger;
-            pEl = field;
-            width = this.el.offsetWidth;
-            height = this.el.offsetHeight;
-            viewportWidth = window.innerWidth || document.documentElement.clientWidth;
-            viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-            scrollTop = window.pageYOffset || document.body.scrollTop || document.documentElement.scrollTop;
+            var field = this._o.trigger, pEl = field,
+            width = this.el.offsetWidth, height = this.el.offsetHeight,
+            viewportWidth = window.innerWidth || document.documentElement.clientWidth,
+            viewportHeight = window.innerHeight || document.documentElement.clientHeight,
+            scrollTop = window.pageYOffset || document.body.scrollTop || document.documentElement.scrollTop,
+            left, top, clientRect;
 
             if (typeof field.getBoundingClientRect === 'function') {
                 clientRect = field.getBoundingClientRect();
@@ -22544,8 +22538,11 @@ if (typeof exports !== "undefined") {
                 top = top - height - field.offsetHeight;
             }
 
-            this.el.style.left = left + 'px';
-            this.el.style.top = top + 'px';
+            this.el.style.cssText = [
+                'position: absolute',
+                'left: ' + left + 'px',
+                'top: ' + top + 'px'
+            ].join(';');
         },
 
         /**
@@ -22574,32 +22571,16 @@ if (typeof exports !== "undefined") {
             cells += 7 - after;
             for (var i = 0, r = 0; i < cells; i++)
             {
-                var dayConfig,
-                    day = new Date(year, month, 1 + (i - before)),
+                var day = new Date(year, month, 1 + (i - before)),
                     isSelected = isDate(this._d) ? compareDates(day, this._d) : false,
                     isToday = compareDates(day, now),
                     isEmpty = i < before || i >= (days + before),
-                    isStartRange = opts.startRange && compareDates(opts.startRange, day),
-                    isEndRange = opts.endRange && compareDates(opts.endRange, day),
-                    isInRange = opts.startRange && opts.endRange && opts.startRange < day && day < opts.endRange,
                     isDisabled = (opts.minDate && day < opts.minDate) ||
                                  (opts.maxDate && day > opts.maxDate) ||
                                  (opts.disableWeekends && isWeekend(day)) ||
-                                 (opts.disableDayFn && opts.disableDayFn(day)),
-                    dayConfig = {
-                        day: 1 + (i - before),
-                        month: month,
-                        year: year,
-                        isSelected: isSelected,
-                        isToday: isToday,
-                        isDisabled: isDisabled,
-                        isEmpty: isEmpty,
-                        isStartRange: isStartRange,
-                        isEndRange: isEndRange,
-                        isInRange: isInRange
-                    };
+                                 (opts.disableDayFn && opts.disableDayFn(day));
 
-                row.push(renderDay(dayConfig));
+                row.push(renderDay(1 + (i - before), month, year, isSelected, isToday, isDisabled, isEmpty));
 
                 if (++r === 7) {
                     if (opts.showWeekNumber) {
@@ -22641,9 +22622,7 @@ if (typeof exports !== "undefined") {
                 if (this._o.bound) {
                     removeEvent(document, 'click', this._onClick);
                 }
-                this.el.style.position = 'static'; // reset
-                this.el.style.left = 'auto';
-                this.el.style.top = 'auto';
+                this.el.style.cssText = '';
                 addClass(this.el, 'is-hidden');
                 this._v = false;
                 if (v !== undefined && typeof this._o.onClose === 'function') {
