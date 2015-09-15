@@ -271,6 +271,17 @@ var jsonpatch;
                     }
                     observer.next = setTimeout(slowCheck, intervals[currentInterval++]);
                 };
+                observer.removeEvents = function() {
+                    if (window.addEventListener) {
+                        window.removeEventListener('mousedown', fastCheck);
+                        window.removeEventListener('mouseup', fastCheck);
+                        window.removeEventListener('keydown', fastCheck);
+                    } else {
+                        window.removeEvent('onmousedown', fastCheck);
+                        window.removeEvent('onmouseup', fastCheck);
+                        window.removeEvent('onkeydown', fastCheck);
+                    }
+                };
                 if (typeof window !== 'undefined') {
                     if (window.addEventListener) {
                         window.addEventListener('mousedown', fastCheck);

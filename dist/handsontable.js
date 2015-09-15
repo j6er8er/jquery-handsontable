@@ -7,7 +7,7 @@
  * Licensed under the MIT license.
  * http://handsontable.com/
  *
- * Date: Tue Apr 14 2015 14:46:55 GMT-0700 (PDT)
+ * Date: Mon Sep 14 2015 17:42:51 GMT-0700 (PDT)
  */
 /*jslint white: true, browser: true, plusplus: true, indent: 4, maxerr: 50 */
 
@@ -10212,6 +10212,17 @@ var jsonpatch;
                         currentInterval = intervals.length - 1;
                     }
                     observer.next = setTimeout(slowCheck, intervals[currentInterval++]);
+                };
+                observer.removeEvents = function() {
+                    if (window.addEventListener) {
+                        window.removeEventListener('mousedown', fastCheck);
+                        window.removeEventListener('mouseup', fastCheck);
+                        window.removeEventListener('keydown', fastCheck);
+                    } else {
+                        window.removeEvent('onmousedown', fastCheck);
+                        window.removeEvent('onmouseup', fastCheck);
+                        window.removeEvent('onkeydown', fastCheck);
+                    }
                 };
                 if (typeof window !== 'undefined') {
                     if (window.addEventListener) {
