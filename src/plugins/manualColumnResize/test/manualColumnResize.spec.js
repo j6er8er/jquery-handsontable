@@ -22,6 +22,25 @@ describe('manualColumnResize', function () {
     expect(this.$container.find('tbody tr:eq(0) td:eq(2)').outerWidth()).toEqual(180);
   });
 
+  it("should be enabled after specifying it in updateSettings config", function () {
+    var hot = handsontable({
+      data: [
+        {id: 1, name: "Ted", lastName: "Right"},
+        {id: 2, name: "Frank", lastName: "Honest"},
+        {id: 3, name: "Joan", lastName: "Well"},
+        {id: 4, name: "Sid", lastName: "Strong"},
+        {id: 5, name: "Jane", lastName: "Neat"}
+      ],
+      colHeaders: true
+    });
+
+    updateSettings({manualColumnResize: true});
+
+    this.$container.find('thead tr:eq(0) th:eq(0)').simulate('mouseover');
+
+    expect($('.manualColumnResizer').size()).toBeGreaterThan(0);
+  });
+
   it("should change the default column widths with updateSettings", function () {
     handsontable({
       manualColumnResize: true
@@ -214,6 +233,36 @@ describe('manualColumnResize', function () {
       expect(colWidth(this.$container, 0)).toBeInArray([24, 25]);
     });
 
+  });
+
+  it("should autosize column after double click (when initial width is not defined)", function () {
+    handsontable({
+      data: Handsontable.helper.createSpreadsheetData(3, 3),
+      colHeaders: true,
+      manualColumnResize: true,
+      columns: [{width: 100}, {width: 200}, {}]
+    });
+
+    expect(colWidth(this.$container, 0)).toEqual(100);
+    expect(colWidth(this.$container, 1)).toEqual(200);
+    expect(colWidth(this.$container, 2)).toEqual(50);
+
+    resizeColumn(2, 300);
+
+    var $resizer = this.$container.find('.manualColumnResizer');
+    var resizerPosition = $resizer.position();
+
+    $resizer.simulate('mousedown',{clientX: resizerPosition.left});
+    $resizer.simulate('mouseup');
+
+    $resizer.simulate('mousedown',{clientX: resizerPosition.left});
+    $resizer.simulate('mouseup');
+
+    waits(1000);
+
+    runs(function() {
+      expect(colWidth(this.$container, 2)).toBeAroundValue(26);
+    }.bind(this));
   });
 
   it("should adjust resize handles position after table size changed", function(){

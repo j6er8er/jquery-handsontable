@@ -1,11 +1,10 @@
-/**
- * This is inception. Using Handsontable as Handsontable editor
- */
 
-import * as helper from './../helpers.js';
-import * as dom from './../dom.js';
-import {getEditor, registerEditor} from './../editors.js';
-import {TextEditor} from './textEditor.js';
+import {KEY_CODES} from './../helpers/unicode';
+import {extend} from './../helpers/object';
+import {setCaretPosition} from './../helpers/dom/element';
+import {stopImmediatePropagation, isImmediatePropagationStopped} from './../helpers/dom/event';
+import {getEditor, registerEditor} from './../editors';
+import {TextEditor} from './textEditor';
 
 var HandsontableEditor = TextEditor.prototype.extend();
 
@@ -24,11 +23,6 @@ HandsontableEditor.prototype.createElements = function() {
   this.TEXTAREA_PARENT.appendChild(DIV);
 
   this.htContainer = DIV;
-  this.htEditor = new Handsontable(DIV, {
-    autoColumnSize: false,
-    autoRowSize: false
-  });
-
   this.assignHooks();
 };
 
@@ -37,7 +31,6 @@ HandsontableEditor.prototype.prepare = function(td, row, col, prop, value, cellP
   TextEditor.prototype.prepare.apply(this, arguments);
 
   var parent = this;
-
   var options = {
     startRows: 0,
     startCols: 0,
@@ -47,15 +40,13 @@ HandsontableEditor.prototype.prepare = function(td, row, col, prop, value, cellP
     copyPaste: false,
     autoColumnSize: false,
     autoRowSize: false,
-    cells: function() {
-      return {
-        readOnly: true
-      };
-    },
+    readOnly: true,
     fillHandle: false,
     afterOnCellMouseDown: function() {
       var value = this.getValue();
-      if (value !== void 0) { //if the value is undefined then it means we don't want to set the value
+
+      // if the value is undefined then it means we don't want to set the value
+      if (value !== void 0) {
         parent.setValue(value);
       }
       parent.instance.destroyEditor();
@@ -63,42 +54,22 @@ HandsontableEditor.prototype.prepare = function(td, row, col, prop, value, cellP
   };
 
   if (this.cellProperties.handsontable) {
-    helper.extend(options, cellProperties.handsontable);
+    extend(options, cellProperties.handsontable);
   }
-  if (this.htEditor) {
-    this.htEditor.destroy();
-  }
-
-  this.htEditor = new Handsontable(this.htContainer, options);
-
-  //this.$htContainer.handsontable('destroy');
-  //this.$htContainer.handsontable(options);
+  this.htOptions = options;
 };
 
 var onBeforeKeyDown = function(event) {
-
-  if (event != null && event.isImmediatePropagationEnabled == null) {
-    event.stopImmediatePropagation = function() {
-      this.isImmediatePropagationEnabled = false;
-      this.cancelBubble = true;
-    };
-    event.isImmediatePropagationEnabled = true;
-    event.isImmediatePropagationStopped = function() {
-      return !this.isImmediatePropagationEnabled;
-    };
-  }
-
-  if (event.isImmediatePropagationStopped()) {
+  if (isImmediatePropagationStopped(event)) {
     return;
   }
-
   var editor = this.getActiveEditor();
 
   var innerHOT = editor.htEditor.getInstance(); //Handsontable.tmpHandsontable(editor.htContainer, 'getInstance');
 
   var rowToSelect;
 
-  if (event.keyCode == helper.keyCode.ARROW_DOWN) {
+  if (event.keyCode == KEY_CODES.ARROW_DOWN) {
     if (!innerHOT.getSelected()) {
       rowToSelect = 0;
     } else {
@@ -106,7 +77,7 @@ var onBeforeKeyDown = function(event) {
       var lastRow = innerHOT.countRows() - 1;
       rowToSelect = Math.min(lastRow, selectedRow + 1);
     }
-  } else if (event.keyCode == helper.keyCode.ARROW_UP) {
+  } else if (event.keyCode == KEY_CODES.ARROW_UP) {
     if (innerHOT.getSelected()) {
       var selectedRow = innerHOT.getSelected()[0];
       rowToSelect = selectedRow - 1;
@@ -119,12 +90,13 @@ var onBeforeKeyDown = function(event) {
     } else {
       innerHOT.selectCell(rowToSelect, 0);
     }
+    if (innerHOT.getData().length) {
+      event.preventDefault();
+      stopImmediatePropagation(event);
 
-    event.preventDefault();
-    event.stopImmediatePropagation();
-
-    editor.instance.listen();
-    editor.TEXTAREA.focus();
+      editor.instance.listen();
+      editor.TEXTAREA.focus();
+    }
   }
 };
 
@@ -134,7 +106,10 @@ HandsontableEditor.prototype.open = function() {
 
   TextEditor.prototype.open.apply(this, arguments);
 
-  this.htEditor.render();
+  if (this.htEditor) {
+    this.htEditor.destroy();
+  }
+  this.htEditor = new Handsontable(this.htContainer, this.htOptions);
 
   if (this.cellProperties.strict) {
     this.htEditor.selectCell(0, 0);
@@ -144,8 +119,7 @@ HandsontableEditor.prototype.open = function() {
     this.TEXTAREA.style.visibility = 'visible';
   }
 
-  dom.setCaretPosition(this.TEXTAREA, 0, this.TEXTAREA.value.length);
-
+  setCaretPosition(this.TEXTAREA, 0, this.TEXTAREA.value.length);
 };
 
 HandsontableEditor.prototype.close = function() {
@@ -170,14 +144,14 @@ HandsontableEditor.prototype.beginEditing = function(initialValue) {
 };
 
 HandsontableEditor.prototype.finishEditing = function(isCancelled, ctrlDown) {
-  if (this.htEditor.isListening()) { //if focus is still in the HOT editor
+  if (this.htEditor && this.htEditor.isListening()) { //if focus is still in the HOT editor
 
     //if (Handsontable.tmpHandsontable(this.htContainer,'isListening')) { //if focus is still in the HOT editor
     //if (this.$htContainer.handsontable('isListening')) { //if focus is still in the HOT editor
     this.instance.listen(); //return the focus to the parent HOT instance
   }
 
-  if (this.htEditor.getSelected()) {
+  if (this.htEditor && this.htEditor.getSelected()) {
     //if (Handsontable.tmpHandsontable(this.htContainer,'getSelected')) {
     //if (this.$htContainer.handsontable('getSelected')) {
     //  var value = this.$htContainer.handsontable('getInstance').getValue();
